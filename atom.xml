@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>defateQ&#39;s Blog</title>
+  
+  <subtitle>Engineer</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://defateq.github.io/"/>
+  <updated>2019-07-08T16:13:08.663Z</updated>
+  <id>http://defateq.github.io/</id>
+  
+  <author>
+    <name>defateQ</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>记一次Grub修复</title>
+    <link href="http://defateq.github.io/2017/08/02/2017-07-28-%E8%AE%B0%E4%B8%80%E6%AC%A1Grub%E4%BF%AE%E5%A4%8D/"/>
+    <id>http://defateq.github.io/2017/08/02/2017-07-28-记一次Grub修复/</id>
+    <published>2017-08-02T11:20:20.000Z</published>
+    <updated>2019-07-08T16:13:08.663Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>这件事情非常奇怪。我只是在正常使用Linux，并没有对Grub或者内核进行什么操作，磁盘分区也没有什么变动，Root分区还是那个UUID，但不知为什么，Grub就是挂了，一开机直接给我出来这么个东西：</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grub rescue&gt;</span><br></pre></td></tr></table></figure><p>心里一万头羊驼奔过，一刹那有种想重装系统的冲动，因为本来计划着就要重装一次，但无奈现在还不到时候，而且有重要的事要用电脑，于是忍住了。还是想办法修复吧。</p><a id="more"></a><h2 id="用以前的修复方法"><a href="#用以前的修复方法" class="headerlink" title="用以前的修复方法"></a>用以前的修复方法</h2><p>以前遇见过Grub被弄坏的情况，也成功修复过，于是还是想着用以前的办法修复。用U盘做了一个Manjaro的Live CD，关掉UEFI中的Secure Boot，从U盘启动。启动后直接打开Terminal，Chroot到出问题的本地Linux环境中。首先挂在/分区和/boot/efi分区</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># mkdir /mnt/arch</span></span><br><span class="line"><span class="comment"># mount /dev/nvme0n1p7 /mnt/arch</span></span><br><span class="line"><span class="comment"># mount /dev/nvme0n1p2 /mnt/arch/boot/efi</span></span><br></pre></td></tr></table></figure><p>然后挂载临时文件系统：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cd /mnt/arch</span></span><br><span class="line"><span class="comment"># mount -t proc proc proc/</span></span><br><span class="line"><span class="comment"># mount -t sysfs sys sys/</span></span><br><span class="line"><span class="comment"># mount -o bind /dev dev/</span></span><br><span class="line"><span class="comment"># mount -t devpts pts dev/pts/</span></span><br></pre></td></tr></table></figure><p>最后Change root：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># chroot /mnt/arch /usr/bin/bash</span></span><br></pre></td></tr></table></figure><p>这样就chroot到本地磁盘的Linux环境中了，尝试修复一下Grub：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># update-grub</span></span><br></pre></td></tr></table></figure><p>update-grub重新生成了一遍/boot/grub/grub.cfg文件，但是并未修改或重新安装Grub软件，生成过程中并没有成功找到Windows系统。重启一下试试，结果还是悲剧。又重新启动到Live CD环境中，重新Chroot，这次尝试用grub-install命令重新安装了一遍Grub，结果发现并没有安装成功，efibootmgr了一下也显示并没有增加新的EFI启动项，好奇怪，难道是UEFI中不能在Chroot环境下用grub-install安装Grub启动项？要么就是我的grub-install参数不对？总之，反正是没成功。思来想去还是觉得得在原来的环境中修复Grub比较稳妥，所以不如还是试着用一下grub rescue吧，看能不能成功引导。</p><h2 id="引导本地Linux系统"><a href="#引导本地Linux系统" class="headerlink" title="引导本地Linux系统"></a>引导本地Linux系统</h2><p>看了一下grub rescue的用法，其实一点都不难，在了解自己硬盘分区和挂载情况的前提下，只需要敲几个简单的命令就可以成功引导了。我的Linux根目录装在我的第七个分区上，EFI分区无所谓了，这里暂时用不到。</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">grub rescue&gt; ls (hd0,gpt7)/boot/grub</span><br><span class="line">grub rescue&gt; set root=(hd0,gpt7)</span><br><span class="line">grub rescue&gt; set prefix=(hd0,gpt7)/boot/grub</span><br><span class="line">grub rescue&gt; insmod /boot/grub/x86_64-efi/normal.mod</span><br><span class="line">grub rescue&gt; normal</span><br></pre></td></tr></table></figure><p>Bingo! 到此即可成功加载熟悉的Grub界面了，选择Linux引导项，成功引导。</p><h2 id="修复Grub"><a href="#修复Grub" class="headerlink" title="修复Grub"></a>修复Grub</h2><p>成功引导原系统之后，还是先试着用update-grub修复了一下grub.cfg配置文件，这次Grub成功找到了Windows系统并自动生成引导项。然后重新启动，结果还是不行。看来并不是Grub的配置出问题，而是Grub软件本身出了问题。不知道会不会跟我用Preloader绕过Secure Boot检测有关系呢？估计很有可能。只好用grub-install重新安装一遍Grub了。</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ManjaroRes</span></span><br></pre></td></tr></table></figure><p>用efibootmgr命令看一下，果然成功生成了一个名为“ManjaroRes”的启动项，重新启动，成功！这里还有一个小插曲，“–efi-directory”选项应该填的是EFI分区挂载的位置，即“/boot/efi”，而不是它下面的EFI目录。一开始我就写成了“–efi-directory=/boot/efi/EFI”，结果UEFI启动项是生成了，但根本启动不了。好了，后面收尾工作就简单了，把/boot/efi/EFI/ManjaroRes/grubx64.efi拷贝到/boot/efi/EFI/Manjaro/下，并且重命名为loader.efi，然后在UEFI设置中打开Secure Boot并启用第三方证书验证，加载Preloader，选择Enroll Hash把新的loader.efi添加进去，重启，成功加载熟悉的Grub界面。</p><h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次修复Grub虽然并没有花费很长时间，但是几经波折，电脑也重启了好多遍，终于还是修复了。只是Grub挂掉的原因还是不知道，要么就是跟我在Windows下的操作有关系，要么就是跟Preloader有关系了。不管怎么说，以后还是少遇到一些这么折腾的情况把。。。</p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;起因&quot;&gt;&lt;a href=&quot;#起因&quot; class=&quot;headerlink&quot; title=&quot;起因&quot;&gt;&lt;/a&gt;起因&lt;/h2&gt;&lt;p&gt;这件事情非常奇怪。我只是在正常使用Linux，并没有对Grub或者内核进行什么操作，磁盘分区也没有什么变动，Root分区还是那个UUID，但不知为什么，Grub就是挂了，一开机直接给我出来这么个东西：&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;grub rescue&amp;gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+
+&lt;p&gt;心里一万头羊驼奔过，一刹那有种想重装系统的冲动，因为本来计划着就要重装一次，但无奈现在还不到时候，而且有重要的事要用电脑，于是忍住了。还是想办法修复吧。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://defateq.github.io/categories/Linux/"/>
+    
+    
+      <category term="linux" scheme="http://defateq.github.io/tags/linux/"/>
+    
+      <category term="Grub" scheme="http://defateq.github.io/tags/Grub/"/>
+    
+  </entry>
+  
+</feed>
