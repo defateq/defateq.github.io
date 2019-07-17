@@ -1,0 +1,582 @@
+
+<!DOCTYPE html>
+<html lang="zh-cn">
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="defateQ&#39;s Blog">
+    <title>WSGI是啥？ - defateQ&#39;s Blog</title>
+    <meta name="author" content="defateQ">
+    
+        <meta name="keywords" content="linux,python,">
+    
+    
+    
+        <link rel="alternate" type="application/atom+xml" title="RSS" href="/atom.xml">
+    
+    <script type="application/ld+json">{"@context":"http://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"defateQ","sameAs":["https://github.com/defateq","mailto:defateq@hotmail.com"],"image":"avantor.jpeg"},"articleBody":"简介：\n\n\n\n\n\n\nWSGI（全称Web Server Gateway Interface）即Web服务器网关接口，这种接口定义了一个Web Server如何与Web应用交互，以及Web应用如何能够链接在一起来处理一个请求。\n\n\n\n\nWSGI是什么WSGI（全称Web Server Gateway Interface）即Web服务器网关接口，这种接口定义了一个Web Server如何与Web应用交互，以及Web应用如何能够链接在一起来处理一个请求。WSGI是一个Python的规范，在PEP 3333中有详细的描述。要实现WSGI协议，必须同时实现Web Server和Web Application，当前运行在WSGI协议上的Web框架有Bottle、Flask、Django、Pyramid等。\nWSGI协议主要包括Server和Application两部分：\n\nWSGI Server负责从客户端接收请求，将请求转发给Application，并将Application的响应返回给客户端；\nWSGI Application负责接收由Server转发的请求，处理请求，并将处理结果返回给Server。Application中可以包含多个栈式的中间件，这些中间件需要同时实现Server与Application，因此可以在WSGI Server和Application之间起到调节作用：对Server来说，中间件扮演Application，对Application来说，中间件扮演Server。\n\nWSGI协议其实就是定义了一种Server与Application之间耦合的规范，即可以有多种WSGI Server，也可以有多种WSGI Application，那么就可以选择任意的Server和Application组合来实现自己的Web应用。\nDjango、Flask框架都有自己实现的简单的WSGI Server，一般用于服务器的调试，生产环境下建议使用其他WSGI Server。\nWSGI协议的实现WSGI接口定义非常简单，Web应用开发者只需要实现一个函数，就可以响应HTTP请求。一个最简单的WSGI应用如下：\n1234# hello.pydef application(environ, start_response):  start_response('200 OK', [('Content-Type', 'text/html')])  return '&lt;h1&gt;Hello, WSGI!&lt;/h1&gt;'\n\n在该函数中，调用了start_response函数发送HTTP响应的Header，注意Header只能发送一次，也就是说start_response函数只能调用一次。start_response函数接收两个参数，一是HTTP响应码，二是一组list表示的HTTP Header。函数的返回值&#39;&lt;h1&gt;Hello, WSGI!&lt;/h1&gt;&#39;作为HTTP响应的Body发送给服务器。\n整个application函数没有涉及到任何解析HTTP的部分，也就是说不需要编写底层代码，只需要关心在更高层面上如何响应HTTP请求就可以了。我们需要做的只是从environ这个dict对象拿到HTTP请求信息，经过处理后通过start_response发送Header，然后返回Body的值就可以了。\n那么如何让这个application函数运行起来呢？必须由WSGI服务器来调用。有很多符合WSGI规范的服务器可以选择，如果用于测试的话可以使用Python内置的一个WSGI服务器wsgiref，它是用纯Python编写的WSGI服务器的参考实现。所谓参考实现即该实现完全符合WSGI标准，但是不考虑任何运行效率问题，仅用于开发和测试使用。\n使用wsgiref模块编写一个简单的server来运行application函数，如下所示：\n1234567# server.pyfrom wsgiref.simple_server import make_serverfrom hello import applicationhttpd = make_server('', 8000, application)print \"Serving HTTP on port 8000...\"httpd.serve_forever()\n\n将两个文件放在同一目录下，使用python server.py启动服务器，使用浏览器访问http://localhost:8000/即可返回“Hello, WSGI!”网页。\nWSGI与ApacheApache也可以作为WSGI服务器使用，需要安装和启动WSGI模块。以Ubuntu为例，首先需要安装Apache的WSGI模块：\nsudo apt install libapache2-mod-wsgi\n 然后启用该模块：\nsudo a2enmod wsgi\n编辑配置文件/etc/apache2/mods-enabled/wsgi.conf，添加相关处理配置：\n123&lt;IfModule mod_wsgi.c&gt;WSGIScriptAlias /test /var/www/html/test.wsgi&lt;/IfModule&gt;\n\n然后，在/var/www/html/目录下创建test.wsgi文件，文件内容与前面hello.py相同即可。Apache服务器运行起来后，使用浏览器访问http://localhost/test，即可在网页上看到“Hello, WSGI!”。\n总结本文仅仅是简单学习了一下WSGI这种接口，只是对WSGI的一个初步了解。如果想要深入理解WSGI甚至使用WSGI编写Web应用的话，还需要大量的实践。\n","dateCreated":"2019-07-17T23:08:43+08:00","dateModified":"2019-07-17T23:08:43+08:00","datePublished":"2019-07-17T23:08:43+08:00","description":"简介：","headline":"WSGI是啥？","image":[],"mainEntityOfPage":{"@type":"WebPage","@id":"http://defateq.github.io/2019/07/17/WSGI是啥？/"},"publisher":{"@type":"Organization","name":"defateQ","sameAs":["https://github.com/defateq","mailto:defateq@hotmail.com"],"image":"avantor.jpeg","logo":{"@type":"ImageObject","url":"avantor.jpeg"}},"url":"http://defateq.github.io/2019/07/17/WSGI是啥？/","keywords":"Python"}</script>
+    <meta name="description" content="简介：">
+<meta name="keywords" content="Python">
+<meta property="og:type" content="blog">
+<meta property="og:title" content="WSGI是啥？">
+<meta property="og:url" content="http://defateq.github.io/2019/07/17/WSGI是啥？/index.html">
+<meta property="og:site_name" content="defateQ&#39;s Blog">
+<meta property="og:description" content="简介：">
+<meta property="og:locale" content="zh-cn">
+<meta property="og:updated_time" content="2019-07-17T15:08:43.622Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="WSGI是啥？">
+<meta name="twitter:description" content="简介：">
+    
+    
+        
+    
+    
+        <meta property="og:image" content="http://defateq.github.io/assets/images/avantor.jpeg"/>
+    
+    
+    
+    
+    <!--STYLES-->
+    <link rel="stylesheet" href="/assets/css/style-wanxuzm44nkmdmpxycas58go1ywexx3hw8nds0cb3rlr1vvgikaowopt2aop.min.css">
+    <!--STYLES END-->
+    
+
+    
+
+    
+        
+    
+</head>
+
+    <body>
+        <div id="blog">
+            <!-- Define author's picture -->
+
+
+    
+        
+            
+        
+    
+
+<header id="header" data-behavior="4">
+    <i id="btn-open-sidebar" class="fa fa-lg fa-bars"></i>
+    <div class="header-title">
+        <a
+            class="header-title-link"
+            href="/ "
+            aria-label=""
+        >
+            defateQ&#39;s Blog
+        </a>
+    </div>
+    
+        
+            <a
+                class="header-right-picture "
+                href="#about"
+                aria-label="打开链接: /#about"
+            >
+        
+        
+            <img class="header-picture" src="/assets/images/avantor.jpeg" alt="作者的图片"/>
+        
+        </a>
+    
+</header>
+
+            <!-- Define author's picture -->
+
+
+
+        
+    
+
+<nav id="sidebar" data-behavior="4">
+    <div class="sidebar-container">
+        
+            <div class="sidebar-profile">
+                <a
+                    href="/#about"
+                    aria-label="阅读有关作者的更多信息"
+                >
+                    <img class="sidebar-profile-picture" src="/assets/images/avantor.jpeg" alt="作者的图片"/>
+                </a>
+                <h4 class="sidebar-profile-name">defateQ</h4>
+                
+                    <h5 class="sidebar-profile-bio"><p>兴趣使然，随意涂鸦</p>
+</h5>
+                
+            </div>
+        
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a  class="sidebar-button-link "
+                             href="/ "
+                            
+                            title="首页"
+                        >
+                    
+                        <i class="sidebar-button-icon fa fa-home" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">首页</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a  class="sidebar-button-link "
+                             href="/all-categories"
+                            
+                            title="分类"
+                        >
+                    
+                        <i class="sidebar-button-icon fa fa-bookmark" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">分类</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a  class="sidebar-button-link "
+                             href="/all-tags"
+                            
+                            title="标签"
+                        >
+                    
+                        <i class="sidebar-button-icon fa fa-tags" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">标签</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a  class="sidebar-button-link "
+                             href="/all-archives"
+                            
+                            title="归档"
+                        >
+                    
+                        <i class="sidebar-button-icon fa fa-archive" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">归档</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a  class="sidebar-button-link "
+                             href="#about"
+                            
+                            title="关于"
+                        >
+                    
+                        <i class="sidebar-button-icon fa fa-question" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">关于</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a  class="sidebar-button-link " href="https://github.com/defateq" target="_blank" rel="noopener" title="GitHub">
+                    
+                        <i class="sidebar-button-icon fab fa-github" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">GitHub</span>
+                    </a>
+            </li>
+            
+                <li class="sidebar-button">
+                    
+                        <a  class="sidebar-button-link " href="mailto:defateq@hotmail.com" target="_blank" rel="noopener" title="邮箱">
+                    
+                        <i class="sidebar-button-icon fa fa-envelope" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">邮箱</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+            <ul class="sidebar-buttons">
+            
+                <li class="sidebar-button">
+                    
+                        <a  class="sidebar-button-link "
+                             href="/atom.xml"
+                            
+                            title="RSS"
+                        >
+                    
+                        <i class="sidebar-button-icon fa fa-rss" aria-hidden="true"></i>
+                        <span class="sidebar-button-desc">RSS</span>
+                    </a>
+            </li>
+            
+        </ul>
+        
+    </div>
+</nav>
+
+            
+            <div id="main" data-behavior="4"
+                 class="
+                        hasCoverMetaIn
+                        ">
+                
+<article class="post">
+    
+    
+        <div class="post-header main-content-wrap text-left">
+    
+        <h1 class="post-title">
+            WSGI是啥？
+        </h1>
+    
+    
+        <div class="post-meta">
+    <time datetime="2019-07-17T23:08:43+08:00">
+	
+		    7月 17, 2019
+    	
+    </time>
+    
+</div>
+
+    
+</div>
+
+    
+    <div class="post-content markdown">
+        <div class="main-content-wrap">
+            <p>简介：</p>
+<a id="more"></a>
+
+<h1 id="table-of-contents">目录</h1><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#WSGI是什么"><span class="toc-text">WSGI是什么</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#WSGI协议的实现"><span class="toc-text">WSGI协议的实现</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#WSGI与Apache"><span class="toc-text">WSGI与Apache</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#总结"><span class="toc-text">总结</span></a></li></ol>
+
+
+
+<p>WSGI（全称Web Server Gateway Interface）即Web服务器网关接口，这种接口定义了一个Web Server如何与Web应用交互，以及Web应用如何能够链接在一起来处理一个请求。</p>
+<!-- more -->
+
+<!-- toc -->
+
+<h1 id="WSGI是什么"><a href="#WSGI是什么" class="headerlink" title="WSGI是什么"></a>WSGI是什么</h1><p>WSGI（全称Web Server Gateway Interface）即Web服务器网关接口，这种接口定义了一个Web Server如何与Web应用交互，以及Web应用如何能够链接在一起来处理一个请求。WSGI是一个Python的规范，在<a href="https://www.python.org/dev/peps/pep-3333" target="_blank" rel="noopener">PEP 3333</a>中有详细的描述。要实现WSGI协议，必须同时实现Web Server和Web Application，当前运行在WSGI协议上的Web框架有Bottle、Flask、Django、Pyramid等。</p>
+<p>WSGI协议主要包括Server和Application两部分：</p>
+<ul>
+<li>WSGI Server负责从客户端接收请求，将请求转发给Application，并将Application的响应返回给客户端；</li>
+<li>WSGI Application负责接收由Server转发的请求，处理请求，并将处理结果返回给Server。Application中可以包含多个栈式的中间件，这些中间件需要同时实现Server与Application，因此可以在WSGI Server和Application之间起到调节作用：对Server来说，中间件扮演Application，对Application来说，中间件扮演Server。</li>
+</ul>
+<p>WSGI协议其实就是定义了一种Server与Application之间耦合的规范，即可以有多种WSGI Server，也可以有多种WSGI Application，那么就可以选择任意的Server和Application组合来实现自己的Web应用。</p>
+<p>Django、Flask框架都有自己实现的简单的WSGI Server，一般用于服务器的调试，生产环境下建议使用其他WSGI Server。</p>
+<h1 id="WSGI协议的实现"><a href="#WSGI协议的实现" class="headerlink" title="WSGI协议的实现"></a>WSGI协议的实现</h1><p>WSGI接口定义非常简单，Web应用开发者只需要实现一个函数，就可以响应HTTP请求。一个最简单的WSGI应用如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># hello.py</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">application</span><span class="params">(environ, start_response)</span>:</span></span><br><span class="line">  start_response(<span class="string">'200 OK'</span>, [(<span class="string">'Content-Type'</span>, <span class="string">'text/html'</span>)])</span><br><span class="line">  <span class="keyword">return</span> <span class="string">'&lt;h1&gt;Hello, WSGI!&lt;/h1&gt;'</span></span><br></pre></td></tr></table></figure>
+
+<p>在该函数中，调用了start_response函数发送HTTP响应的Header，注意Header只能发送一次，也就是说start_response函数只能调用一次。start_response函数接收两个参数，一是HTTP响应码，二是一组list表示的HTTP Header。函数的返回值<code>&#39;&lt;h1&gt;Hello, WSGI!&lt;/h1&gt;&#39;</code>作为HTTP响应的Body发送给服务器。</p>
+<p>整个application函数没有涉及到任何解析HTTP的部分，也就是说不需要编写底层代码，只需要关心在更高层面上如何响应HTTP请求就可以了。我们需要做的只是从environ这个dict对象拿到HTTP请求信息，经过处理后通过start_response发送Header，然后返回Body的值就可以了。</p>
+<p>那么如何让这个application函数运行起来呢？必须由WSGI服务器来调用。有很多符合WSGI规范的服务器可以选择，如果用于测试的话可以使用Python内置的一个WSGI服务器wsgiref，它是用纯Python编写的WSGI服务器的参考实现。所谓参考实现即该实现完全符合WSGI标准，但是不考虑任何运行效率问题，仅用于开发和测试使用。</p>
+<p>使用wsgiref模块编写一个简单的server来运行application函数，如下所示：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># server.py</span></span><br><span class="line"><span class="keyword">from</span> wsgiref.simple_server <span class="keyword">import</span> make_server</span><br><span class="line"><span class="keyword">from</span> hello <span class="keyword">import</span> application</span><br><span class="line"></span><br><span class="line">httpd = make_server(<span class="string">''</span>, <span class="number">8000</span>, application)</span><br><span class="line"><span class="keyword">print</span> <span class="string">"Serving HTTP on port 8000..."</span></span><br><span class="line">httpd.serve_forever()</span><br></pre></td></tr></table></figure>
+
+<p>将两个文件放在同一目录下，使用<code>python server.py</code>启动服务器，使用浏览器访问<a href="http://localhost:8000/即可返回“Hello" target="_blank" rel="noopener">http://localhost:8000/即可返回“Hello</a>, WSGI!”网页。</p>
+<h1 id="WSGI与Apache"><a href="#WSGI与Apache" class="headerlink" title="WSGI与Apache"></a>WSGI与Apache</h1><p>Apache也可以作为WSGI服务器使用，需要安装和启动WSGI模块。以Ubuntu为例，首先需要安装Apache的WSGI模块：</p>
+<p><code>sudo apt install libapache2-mod-wsgi</code></p>
+<p> 然后启用该模块：</p>
+<p><code>sudo a2enmod wsgi</code></p>
+<p>编辑配置文件/etc/apache2/mods-enabled/wsgi.conf，添加相关处理配置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;IfModule mod_wsgi.c&gt;</span><br><span class="line">WSGIScriptAlias /test /var/www/html/test.wsgi</span><br><span class="line">&lt;/IfModule&gt;</span><br></pre></td></tr></table></figure>
+
+<p>然后，在/var/www/html/目录下创建test.wsgi文件，文件内容与前面hello.py相同即可。Apache服务器运行起来后，使用浏览器访问<a href="http://localhost/test，即可在网页上看到“Hello" target="_blank" rel="noopener">http://localhost/test，即可在网页上看到“Hello</a>, WSGI!”。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文仅仅是简单学习了一下WSGI这种接口，只是对WSGI的一个初步了解。如果想要深入理解WSGI甚至使用WSGI编写Web应用的话，还需要大量的实践。</p>
+
+            
+
+
+        </div>
+    </div>
+    <div id="post-footer" class="post-footer main-content-wrap">
+        
+            <div class="post-footer-tags">
+                <span class="text-color-light text-small">标签</span><br/>
+                
+    <a class="tag tag--primary tag--small t-link" href="/tags/Python/">Python</a>
+
+            </div>
+        
+        
+            <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    <a
+                        class="post-action-btn btn btn--disabled"
+                        aria-hidden="true"
+                    >
+                        
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="/2019/07/15/Linux应用程序自启动方式总结/"
+                    data-tooltip="Linux应用程序自启动方式总结"
+                    aria-label="下一篇: Linux应用程序自启动方式总结"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=http://defateq.github.io/2019/07/17/WSGI是啥？/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=http://defateq.github.io/2019/07/17/WSGI是啥？/&amp;title=WSGI是啥？"
+                    title="分享到 QQ"
+                    aria-label="分享到 QQ"
+                >
+                    <i class="fab fa-qq" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+        
+        
+            
+        
+    </div>
+</article>
+
+
+
+                <footer id="footer" class="main-content-wrap">
+    <span class="copyrights">
+        Copyrights &copy; 2019 defateQ. All Rights Reserved.
+    </span>
+</footer>
+
+            </div>
+            
+                <div id="bottom-bar" class="post-bottom-bar" data-behavior="4">
+                    <div class="post-actions-wrap">
+    <nav>
+        <ul class="post-actions post-action-nav">
+            <li class="post-action">
+                
+                    <a
+                        class="post-action-btn btn btn--disabled"
+                        aria-hidden="true"
+                    >
+                        
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                        <span class="hide-xs hide-sm text-small icon-ml">上一篇</span>
+                    </a>
+            </li>
+            <li class="post-action">
+                
+                    
+                <a
+                    class="post-action-btn btn btn--default tooltip--top"
+                    href="/2019/07/15/Linux应用程序自启动方式总结/"
+                    data-tooltip="Linux应用程序自启动方式总结"
+                    aria-label="下一篇: Linux应用程序自启动方式总结"
+                >
+                    
+                        <span class="hide-xs hide-sm text-small icon-mr">下一篇</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </a>
+            </li>
+        </ul>
+    </nav>
+    <ul class="post-actions post-action-share">
+        <li class="post-action hide-lg hide-md hide-sm">
+            <a
+                class="post-action-btn btn btn--default btn-open-shareoptions"
+                href="#btn-open-shareoptions"
+                aria-label="Diesen Beitrag teilen"
+            >
+                <i class="fa fa-share-alt" aria-hidden="true"></i>
+            </a>
+        </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://service.weibo.com/share/share.php?&amp;title=http://defateq.github.io/2019/07/17/WSGI是啥？/"
+                    title="分享到 Weibo"
+                    aria-label="分享到 Weibo"
+                >
+                    <i class="fab fa-weibo" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+            
+            
+            <li class="post-action hide-xs">
+                <a
+                    class="post-action-btn btn btn--default"
+                    target="new" href="http://connect.qq.com/widget/shareqq/index.html?url=http://defateq.github.io/2019/07/17/WSGI是啥？/&amp;title=WSGI是啥？"
+                    title="分享到 QQ"
+                    aria-label="分享到 QQ"
+                >
+                    <i class="fab fa-qq" aria-hidden="true"></i>
+                </a>
+            </li>
+        
+        
+            
+        
+        <li class="post-action">
+            
+                <a class="post-action-btn btn btn--default" href="#table-of-contents" aria-label="目录">
+            
+                <i class="fa fa-list" aria-hidden="true"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+                </div>
+                
+    <div id="share-options-bar" class="share-options-bar" data-behavior="4">
+        <i id="btn-close-shareoptions" class="fa fa-times"></i>
+        <ul class="share-options">
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://service.weibo.com/share/share.php?&amp;title=http://defateq.github.io/2019/07/17/WSGI是啥？/"
+                        aria-label="分享到 Weibo"
+                    >
+                        <i class="fab fa-weibo" aria-hidden="true"></i><span>分享到 Weibo</span>
+                    </a>
+                </li>
+            
+                
+                
+                <li class="share-option">
+                    <a
+                        class="share-option-btn"
+                        target="new"
+                        href="http://connect.qq.com/widget/shareqq/index.html?url=http://defateq.github.io/2019/07/17/WSGI是啥？/&amp;title=WSGI是啥？"
+                        aria-label="分享到 QQ"
+                    >
+                        <i class="fab fa-qq" aria-hidden="true"></i><span>分享到 QQ</span>
+                    </a>
+                </li>
+            
+        </ul>
+    </div>
+
+
+            
+        </div>
+        
+
+
+    
+        
+    
+
+<div id="about">
+    <div id="about-card">
+        <div id="about-btn-close">
+            <i class="fa fa-times"></i>
+        </div>
+        
+            <img id="about-card-picture" src="/assets/images/avantor.jpeg" alt="作者的图片"/>
+        
+            <h4 id="about-card-name">defateQ</h4>
+        
+            <div id="about-card-bio"><p>兴趣使然，随意涂鸦</p>
+</div>
+        
+        
+            <div id="about-card-job">
+                <i class="fa fa-briefcase"></i>
+                <br/>
+                <p>专业码农</p>
+
+            </div>
+        
+        
+            <div id="about-card-location">
+                <i class="fa fa-map-marker-alt"></i>
+                <br/>
+                中国
+            </div>
+        
+    </div>
+</div>
+
+        
+        
+<div id="cover" style="background-image:url('/assets/images/cover.jpg');"></div>
+        <!--SCRIPTS-->
+<script src="/assets/js/script-awsadznqfpp9inxyve3mjyrjtvasyu21ynjlntxgoyrvtnegkkfy2ohrarb1.min.js"></script>
+<!--SCRIPTS END-->
+
+
+    
+
+
+
+
+    </body>
+</html>
